@@ -141,7 +141,7 @@ def store_db(ep: Episode):
         try:
             cursor = conn.cursor()
             cursor.executemany(
-                "INSERT INTO episodes (episode, frame_number, subtitle, picture) VALUES (?,?,?,?)",
+                "INSERT INTO storyboards (episode, frame_number, subtitle, picture) VALUES (?,?,?,?)",
                 data,
             )
             conn.commit()
