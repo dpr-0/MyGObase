@@ -1,12 +1,16 @@
+import pickle
 import sqlite3
 from dataclasses import dataclass
 from typing import Iterator
 
 from mygobase.model import multimodal_understanding
 
+from tqdm import tqdm
+
 
 @dataclass
 class Storyboard:
+    id: int
     episode: int
     frame_number: int
     subtitle: str
@@ -24,6 +28,7 @@ def db_data() -> Iterator[Storyboard]:
             cursor = conn.cursor()
             res = cursor.execute("""
                             SELECT 
+                                id,
                                 episode,
                                 frame_number, 
                                 subtitle,
@@ -33,7 +38,6 @@ def db_data() -> Iterator[Storyboard]:
                             ORDER BY 
                                 episode, 
                                 frame_number
-                            LIMIT 10
                         """)
             for i in res:
                 yield i
@@ -42,7 +46,23 @@ def db_data() -> Iterator[Storyboard]:
 
 
 if __name__ == "__main__":
-    for sb in db_data():
-        question = f"台詞:{sb.subtitle}"
+    result = {}
+    for sb in tqdm(db_data(), total=3946):
+        prompt = """
+        Main character names and appearance descriptions:
+
+        * Tomori: She has short, purple hair that is slightly messy and covers part of her forehead. Her eyes are large and pink, with visible red veins.
+        * Anon: She  has long, straight pink hair that falls over her shoulders. She has large, expressive blue eyes with visible reflections.
+        * Soyo: She has long, light brown hair that cascades over her shoulders. She is wearing a dark green school uniform with a white collar and a large bow on the front. Her eyes are a bright blue.
+        * Riki: She has long, straight brown hair that falls over her shoulders. Her eyes are large and expressive, with a light purple color.
+        * Sakiko: She  has long, wavy hair that is light blue in color. She is wearing a white blouse with long sleeves and a black bow at the collar. She has a gray plaid skirt that reaches just above her knees. She is also wearing white socks and black shoes.
+        * Mutsumi: She has long, light-yellow-colored hair that appears to be silver or gray. 
+        * Rena: She has short, light-colored hair that appears to be silver or gray. She has a gentle expression on her face, with a slight smile and a hint of blush on her cheeks. Her eyes are large and expressive, with one eye being blue and the other being yellow
+        Who is speaker? Just ansmer name
+        """
+        question = prompt
         answer = multimodal_understanding(sb.picture, question)
-        print(sb.episode, sb.frame_number, answer)
+        # print(sb.id, answer, sb.subtitle)
+        result[sb.id] = answer
+    with open("result.pickle", "wb") as f:
+        pickle.dump(result, f, protocol=pickle.HIGHEST_PROTOCOL)
