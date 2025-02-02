@@ -6,12 +6,6 @@ authors = [{ name = "DPR", email = "dpr-0xff@pm.me" }]
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "torch (>=2.5.1,<3.0.0)",
-    "transformers (>=4.48.1,<5.0.0)",
-    "mypy (>=1.14.1,<2.0.0)",
-    "ruff (>=0.9.3,<0.10.0)",
-    "janus @ git+ssh://git@github.com/deepseek-ai/Janus.git",
-    "ffmpeg-python (>=0.2.0,<0.3.0)",
     "numpy (>=2.2.2,<3.0.0)",
     "ass (>=0.5.4,<0.6.0)",
     "tqdm (>=4.67.1,<5.0.0)",
@@ -20,6 +14,12 @@ dependencies = [
     "matplotlib (>=3.10.0,<4.0.0)",
     "polars (>=1.21.0,<2.0.0)",
     "notebook (>=7.3.2,<8.0.0)",
+    "sqlite-vec (>=0.1.6,<0.2.0)",
+    "openai (>=1.61.0,<2.0.0)",
+    "pydantic (>=2.10.6,<3.0.0)",
+    "networkx[default] (>=3.4.2,<4.0.0)",
+    "janus @ git+ssh://git@github.com/deepseek-ai/Janus.git",
+
 ]
 
 
@@ -28,7 +28,7 @@ requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [[tool.mypy.overrides]]
-module = ["transformers.*", "janus.*", "ffmpeg.*"]
+module = ["transformers.*", "janus.*", "ffmpeg.*", "networkx.*", "sqlite_vec.*"]
 ignore_missing_imports = true
 
 [tool.mypy]

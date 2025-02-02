@@ -1,5 +1,7 @@
 import sqlite3
 
+import sqlite_vec
+
 statements = [
     """
     CREATE TABLE IF NOT EXISTS storyboards (
@@ -24,8 +26,25 @@ statements = [
     """
     ALTER TABLE storyboards ADD COLUMN scene INT
 """,
+    """
+    CREATE TABLE IF NOT EXISTS ner (
+                id INTEGER PRIMARY KEY, 
+                scene INT NOT NULL, 
+                ner JSON NOT NULL,
+                FOREIGN KEY(scene) REFERENCES storyboards(scene)
+    );
+""",
+    """
+    CREATE VIRTUAL TABLE entity_embedding USING vec0(
+        entity TEXT PRIMARY KEY,
+        embedding FLOAT[768]
+    );
+""",
 ]
 with sqlite3.connect("db/mygo.db") as conn:
+    conn.enable_load_extension(True)
+    sqlite_vec.load(conn)
+    conn.enable_load_extension(False)
     cursor = conn.cursor()
     for statement in statements:
         try:
