@@ -4,8 +4,7 @@ import numpy as np
 import torch
 from janus.models import VLChatProcessor
 from PIL import Image
-from transformers import AutoModelForCausalLM
-from transformers import AutoConfig
+from transformers import AutoConfig, AutoModelForCausalLM
 
 model_path = "deepseek-ai/Janus-Pro-1B"
 config = AutoConfig.from_pretrained(model_path)
@@ -24,7 +23,7 @@ else:
     vl_gpt = vl_gpt.to(torch.float16)
 
 vl_chat_processor = VLChatProcessor.from_pretrained(model_path)
-tokenizer = vl_chat_processor.tokenizer
+tokenizer = vl_chat_processor.tokenizer  # type: ignore
 cuda_device = "cuda" if torch.cuda.is_available() else "cpu"
 print(cuda_device)
 

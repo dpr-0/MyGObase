@@ -1,20 +1,11 @@
 import pickle
 import sqlite3
-from dataclasses import dataclass
 from typing import Iterator
 
+from tqdm import tqdm  # type: ignore
+
+from mygobase.datatypes import Storyboard
 from mygobase.model import multimodal_understanding
-
-from tqdm import tqdm
-
-
-@dataclass
-class Storyboard:
-    id: int
-    episode: int
-    frame_number: int
-    subtitle: str
-    picture: bytes
 
 
 def namedtuple_factory(cursor, row):
@@ -45,7 +36,7 @@ def db_data() -> Iterator[Storyboard]:
         print("Failed to open database:", e)
 
 
-if __name__ == "__main__":
+def janus1b_understanding():
     result = {}
     for sb in tqdm(db_data(), total=3946):
         prompt = """
@@ -62,7 +53,10 @@ if __name__ == "__main__":
         """
         question = prompt
         answer = multimodal_understanding(sb.picture, question)
-        # print(sb.id, answer, sb.subtitle)
         result[sb.id] = answer
     with open("result.pickle", "wb") as f:
         pickle.dump(result, f, protocol=pickle.HIGHEST_PROTOCOL)
+
+
+if __name__ == "__main__":
+    janus1b_understanding()

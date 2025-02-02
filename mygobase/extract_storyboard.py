@@ -167,9 +167,11 @@ if __name__ == "__main__":
 
     episodes: List[Episode] = []
     futures = []
+    print(video_filenames)
+    input()
     with ThreadPoolExecutor(max_workers=4) as executor:
         for epid, (video_filename, sub_filename) in enumerate(
-            zip(video_filenames, sub_filenames), start=1
+            zip(video_filenames, sub_filenames), start=13
         ):
             futures.append(
                 executor.submit(extract_storyboard, epid, video_filename, sub_filename)
