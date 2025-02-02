@@ -18,12 +18,20 @@ statements = [
     CREATE INDEX IF NOT EXISTS idx_episode_frame_number 
     ON storyboards (episode, frame_number);
 """,
+    """
+    ALTER TABLE storyboards ADD COLUMN role TEXT
+""",
+    """
+    ALTER TABLE storyboards ADD COLUMN scene INT
+""",
 ]
-try:
-    with sqlite3.connect("db/mygo.db") as conn:
-        cursor = conn.cursor()
-        for statement in statements:
+with sqlite3.connect("db/mygo.db") as conn:
+    cursor = conn.cursor()
+    for statement in statements:
+        try:
             cursor.execute(statement)
-        conn.commit()
-except sqlite3.OperationalError as e:
-    print("Failed to open database:", e)
+            conn.commit()
+        except sqlite3.OperationalError as e:
+            print(e)
+        else:
+            print(f"statement ok: {statement}")

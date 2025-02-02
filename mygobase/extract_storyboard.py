@@ -2,20 +2,12 @@ import sqlite3
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from datetime import timedelta
-
-# from io import BytesIO
 from pathlib import Path
 from typing import List, Tuple
 
 import ass  # type: ignore
 import cv2
-
-# import ffmpeg
-# from ffmpeg import Stream
-# from PIL import Image
 from tqdm import tqdm  # type: ignore
-
-# from mygobase import model
 
 FRAME_TIME = 24000 / 1001
 type FrameNumber = int
@@ -46,29 +38,6 @@ def find_ep_id(filename: str) -> int:
     return id
 
 
-# def extract_frame(stream: Stream, frame_num: int):
-#     while isinstance(stream, ffmpeg.nodes.OutputStream):
-#         stream = stream.node.incoming_edges[0].upstream_node.stream()
-#     out, _ = (
-#         stream.filter_("select", "gte(n,{})".format(frame_num))  # type: ignore
-#         .output("pipe:", format="rawvideo", pix_fmt="rgb24", vframes=1)
-#         .run(capture_stdout=True, capture_stderr=True)
-#     )
-
-#     # return Image.fromarray(np.frombuffer(out, np.uint8).reshape([height, width, 3]))
-#     # image = Image.frombytes("RGB", (1920, 1080), out)
-#     # image.save(f"{frame_num}.png")
-#     return out
-
-
-# def extrac_picture(filename: str, frame_nums: List[FrameNumber]) -> List[bytes]:
-#     stream = ffmpeg.input(filename)
-#     res = []
-#     for fn in tqdm(frame_nums):
-#         res.append(extract_frame(stream, fn))
-#     return res
-
-
 def extrac_picture(filename: str, frame_nums: List[FrameNumber]) -> List[bytes]:
     fn_table = {frame_num: frame_num for frame_num in frame_nums}
     frame_num = -1
@@ -85,11 +54,8 @@ def extrac_picture(filename: str, frame_nums: List[FrameNumber]) -> List[bytes]:
             if frame_num not in fn_table:
                 continue
             frame_bytes = cv2.imencode(".png", frame)[1].tobytes()
-            # image = Image.open(BytesIO(frame_bytes))
-            # image.save(f"{frame_num}.png")
             res.append(frame_bytes)
             pbar.update(1)
-            # break
     return res
 
 
