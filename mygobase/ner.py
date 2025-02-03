@@ -132,8 +132,8 @@ def load_scenes(df: pl.DataFrame) -> List[tuple[int, str]]:
     return scene_docs  # type: ignore
 
 
-def load_ner() -> List[NER]:
-    with sqlite3.connect("db/mygo.db") as conn:
+def load_ner(path: str = "db/mygo.db") -> List[NER]:
+    with sqlite3.connect(path) as conn:
         res = conn.execute("""
             SELECT
                 ner

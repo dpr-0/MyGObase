@@ -31,7 +31,7 @@ def search_related_entities(entity: str):
             FROM 
                 entity_embedding
             WHERE 
-                embedding match ? AND k = 1
+                embedding match ? AND k = 3
             """,
             (serialize_float32(embedding),),
         ).fetchone()[0]
@@ -106,15 +106,17 @@ class RAG:
             search_related_entities(e.name)
             for e in er_extractor.extract(query).entities
         ]
+        extracted_entities = list(set(extracted_entities))
         pbar.update(1)
         # print(f"#Entities:{len(extracted_entities)}")
 
         #
-        extracted_scenes = []
+        extracted_scenes = search_related_scenes(query)
         for e in extracted_entities:
             for s in search_related_scenes(e):
-                extracted_scenes.append(summarizer.summarize(query, s))
-        pbar.update(2)
+                extracted_scenes.append(s)
+        extracted_scenes = list(set(extracted_scenes))
+        pbar.update(1)
         # print(f"#Scenes:{len(extracted_scenes)}")
 
         #
@@ -122,24 +124,25 @@ class RAG:
         mygo_graph = MyGOKnowledgeGraph.from_db()
         for e in extracted_entities:
             extracted_ners.append(mygo_graph.query(e))
-        pbar.update(3)
+        pbar.update(1)
         # print(f"#NER:{len(extracted_ners)}")
 
         #
-        commnuity_reports = []
-        for e in extracted_entities:
-            if (report := search_commnuity_report(e)) is not None:
-                commnuity_reports.append(report.model_dump_json())
+        # commnuity_reports = []
+        # for e in extracted_entities:
+        #     if (report := search_commnuity_report(e)) is not None:
+        #         commnuity_reports.append(report.model_dump_json())
         # print(f"#Reports:{len(commnuity_reports)}")
         context = f"""
             相關場景：
             {summarizer.summarize(query, "\n".join(extracted_scenes))}
             相關人事物關係：
             {summarizer.summarize(query, "\n".join(extracted_ners))}
-            相關背景知識:
-            {summarizer.summarize(query, "\n".join(commnuity_reports))}
         """
-        pbar.update(4)
+        #     相關背景知識:
+        #     {summarizer.summarize(query, "\n".join(commnuity_reports))}
+        # """
+        pbar.update(1)
         chat_completion: ChatCompletion = self.client.chat.completions.create(
             messages=[
                 {
@@ -168,12 +171,12 @@ class RAG:
             response_format=json_schema,
         )  # type: ignore
         content: str = chat_completion.choices[0].message.content  # type: ignore
-        pbar.update(5)
+        pbar.update(1)
         return Response.model_validate_json(content)
 
 
 if __name__ == "__main__":
-    query = "為何爽世同意愛音的邀請而加入MyGO樂團？"
+    query = "為何爽世同意愛音的邀請而加入MyGO樂團，有什麼深層原因？"
     print(f"問：{query}")
     rag = RAG()
     answer = rag.query(query)

@@ -141,7 +141,7 @@ class Summarizer:
             messages=[
                 {
                     "role": "system",
-                    "content": f"根據此問題:{query}, 摘要以下內容可能可以回答問題的重點: {contexnt}",
+                    "content": f"根據此問題:{query}, 摘要對於回答問題有幫助的重點: {contexnt}",
                 }
             ],  # type: ignore
             model=self.MODEL,
@@ -152,3 +152,73 @@ class Summarizer:
 
         content: str = chat_completion.choices[0].message.content  # type: ignore
         return content
+
+
+class Questioner:
+    def __init__(self) -> None:
+        self.MODEL = "gemma-2-9b-it"
+        self.client = OpenAI(base_url="http://127.0.0.1:1234/v1", api_key="lm-studio")
+
+    def transform(self, query) -> str:
+        chat_completion: ChatCompletion = self.client.chat.completions.create(
+            messages=[
+                {
+                    "role": "system",
+                    "content": f"根據此問題:{query}, 列出額外至少三項對於這個問題有幫助的問題",
+                }
+            ],  # type: ignore
+            model=self.MODEL,
+            stream=False,
+            max_tokens=-1,
+            temperature=0.7,
+        )  # type: ignore
+
+        content: str = chat_completion.choices[0].message.content  # type: ignore
+        return content
+
+
+class Useful(BaseModel):
+    useful: bool
+
+
+filter_json_schema = ResponseFormatJSONSchema(
+    json_schema=JSONSchema(
+        name="useful", description="", schema=Useful.model_json_schema()
+    ),
+    type="json_schema",
+)
+
+
+class Filter:
+    def __init__(self) -> None:
+        self.MODEL = "gemma-2-9b-it"
+        self.client = OpenAI(base_url="http://127.0.0.1:1234/v1", api_key="lm-studio")
+
+    def filter(self, query: str, text: str) -> bool:
+        chat_completion: ChatCompletion = self.client.chat.completions.create(
+            messages=[
+                {
+                    "role": "system",
+                    "content": """
+                    回答以下內容是否對於回答問題有幫助。
+
+                    問題:
+                    {query}
+                    內容: 
+                    {text}
+                    輸出格式：
+                    {{
+                        "useful": <bool true or false>
+                    }}
+            """.format(query=query, text=text),
+                }
+            ],  # type: ignore
+            model=self.MODEL,
+            stream=False,
+            max_tokens=-1,
+            temperature=0.3,
+            response_format=filter_json_schema,
+        )  # type: ignore
+
+        content: str = chat_completion.choices[0].message.content  # type: ignore
+        return bool(Useful.model_validate_json(content).useful)

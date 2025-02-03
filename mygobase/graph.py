@@ -1,5 +1,5 @@
 import sqlite3
-from typing import List, Self, Set
+from typing import Iterable, List, Self, Set
 
 import networkx as nx
 
@@ -24,15 +24,16 @@ class MyGOKnowledgeGraph:
                 relation=r.relation,
             )
 
-    def query(self, entity: str):
+    def query(self, entities: Iterable[str]):
         res = []
-        for src, dst, data in self.graph.edges(entity, data=True):
+        sub_graph = self.graph.subgraph(entities)
+        for src, dst, data in sub_graph.edges(data=True):
             res.append(f"{src} -> {data['relation']} -> {dst}")
         return "\n".join(res)
 
     @classmethod
-    def from_db(cls) -> Self:
-        ners = load_ner()
+    def from_db(cls, path: str = "db/mygo.db") -> Self:
+        ners = load_ner(path)
         mygo_graph = cls()
         for ner in ners:
             mygo_graph.add_entity_and_relation(ner)
@@ -48,11 +49,9 @@ if __name__ == "__main__":
     print(len(communities))
     cp = CommunityReporter()
     for c_id, community in enumerate(communities):
-        community_report = ""
         with sqlite3.connect("db/mygo.db") as conn:
             cur = conn.cursor()
             for entity in community:
-                community_report += f"{mygo_graph.query(entity)}\n\n"
                 cur.execute(
                     """
                     UPDATE entity_embedding_rowids
@@ -61,7 +60,7 @@ if __name__ == "__main__":
                 """,
                     (c_id, entity),
                 )
-
+        community_report = f"{mygo_graph.query(community)}\n\n"
         community_report_summary = cp.extract(community_report)
         with sqlite3.connect("db/mygo.db") as conn:
             cur = conn.cursor()
