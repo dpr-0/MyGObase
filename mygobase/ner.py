@@ -99,9 +99,6 @@ class EntityRelationExtractor:
         return NER.model_validate_json(content)
 
 
-extractor = EntityRelationExtractor()
-
-
 def load_df():
     with sqlite3.connect("db/mygo.db") as conn:
         df = pl.read_database(
@@ -125,6 +122,29 @@ def load_df():
         return df
 
 
+def load_scenes(df: pl.DataFrame) -> List[tuple[int, str]]:
+    scene_docs = []
+    for (scene_id,), scene_db in df.group_by("scene", maintain_order=True):
+        script = ""
+        for role, subtitle in scene_db.select(["role", "subtitle"]).iter_rows():
+            script += f"{role}:{subtitle}\n"
+        scene_docs.append((scene_id, script))
+    return scene_docs  # type: ignore
+
+
+def load_ner() -> List[NER]:
+    with sqlite3.connect("db/mygo.db") as conn:
+        res = conn.execute("""
+            SELECT
+                ner
+            FROM ner
+        """).fetchall()
+    ners = []
+    for (ner_json,) in res:
+        ners.append(NER.model_validate_json(ner_json))
+    return ners
+
+
 def insert_ner(scene_id: int, ner: NER):
     try:
         with sqlite3.connect("db/mygo.db") as conn:
@@ -141,16 +161,9 @@ def insert_ner(scene_id: int, ner: NER):
 
 
 if __name__ == "__main__":
-    df = load_df()
-    scene_docs = []
-    for (scene_id,), scene_db in df.group_by("scene", maintain_order=True):
-        script = ""
-        for role, subtitle in scene_db.select(["role", "subtitle"]).iter_rows():
-            # print(role, subtitle)
-            script += f"{role}:{subtitle}\n"
-        scene_docs.append((scene_id, script))
-    print(scene_docs[0][1])
+    scene_docs = load_scenes(load_df())
     print("load scenes completed")
+    extractor = EntityRelationExtractor()
     for scene_id, script in tqdm(scene_docs):
         try:
             ner = extractor.extract(script)
