@@ -41,18 +41,9 @@ statements = [
     );
 """,
     """
-    CREATE VIRTUAL TABLE scene_embedding USING vec0(
-        scene TEXT PRIMARY KEY,
-        embedding FLOAT[768]
-    );
-""",
-    """
-    ALTER TABLE entity_embedding_rowids ADD COLUMN community_report_id INT
-""",
-    """
-    CREATE TABLE IF NOT EXISTS community_report (
-                    id INTEGER PRIMARY KEY, 
-                    report JSON NOT NULL
+    CREATE TABLE IF NOT EXISTS entity (
+            entity TEXT PRIMARY KEY,
+            content JSON NOT NULL
     );
 """,
 ]
@@ -60,6 +51,7 @@ with sqlite3.connect("db/mygo.db") as conn:
     conn.enable_load_extension(True)
     sqlite_vec.load(conn)
     conn.enable_load_extension(False)
+
     cursor = conn.cursor()
     for statement in statements:
         try:

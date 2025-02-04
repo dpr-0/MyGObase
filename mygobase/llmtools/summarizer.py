@@ -6,6 +6,8 @@ from openai.types.shared_params import ResponseFormatJSONSchema
 from openai.types.shared_params.response_format_json_schema import JSONSchema
 from pydantic import BaseModel
 
+from mygobase import BASE_URL, CHAT_MODEL
+
 
 class Finding(BaseModel):
     summary: str
@@ -109,8 +111,7 @@ Output:"""
 
 class CommunityReporter:
     def __init__(self) -> None:
-        self.MODEL = "gemma-2-9b-it"
-        self.client = OpenAI(base_url="http://127.0.0.1:1234/v1", api_key="lm-studio")
+        self.client = OpenAI(base_url=BASE_URL, api_key="lm-studio")
 
     def extract(self, text: str):
         chat_completion: ChatCompletion = self.client.chat.completions.create(
@@ -120,7 +121,7 @@ class CommunityReporter:
                     "content": COMMUNITY_REPORT_PROMPT.format(input_text=text),
                 }
             ],  # type: ignore
-            model=self.MODEL,
+            model=CHAT_MODEL,
             stream=False,
             max_tokens=-1,
             temperature=0.3,
@@ -131,33 +132,62 @@ class CommunityReporter:
         return Report.model_validate_json(content)
 
 
+class KeyPoint(BaseModel):
+    points: List[str]
+    score: float
+
+
 class Summarizer:
     def __init__(self) -> None:
-        self.MODEL = "gemma-2-9b-it"
-        self.client = OpenAI(base_url="http://127.0.0.1:1234/v1", api_key="lm-studio")
+        self.client = OpenAI(base_url=BASE_URL, api_key="lm-studio")
 
-    def summarize(self, query, contexnt: str) -> str:
+    def summarize(self, query, context: str) -> KeyPoint:
         chat_completion: ChatCompletion = self.client.chat.completions.create(
             messages=[
                 {
                     "role": "system",
-                    "content": f"根據此問題:{query}, 摘要對於回答問題有幫助的重點: {contexnt}",
+                    "content": """
+                    我想要分析文本是否對於回答問題有幫助，请从给定的文本中提取重點，遵循以下指南
+                    
+                    - 根據問題摘要0-4個文本內對於回答問題有幫助的重點，如果無重點則生成空[]
+                    - 並且根據回答的重點的幫助性給予0-1分之間一個浮點數分數
+                    - 非常有幫助給予滿分1.0分
+                    - 部分幫助給予0-1.0之間
+                    - 毫無幫助給予0.0分
+                    
+                    問題:
+                    {query}
+                    
+                    文本:
+                    {context}
+                    
+                    回答格式: 
+                    {{
+                        "points":[<重點1>, <重點2>, <重點3>], 
+                        "score": <分數>
+                    }}
+                    """.format(query=query, context=context),
                 }
             ],  # type: ignore
-            model=self.MODEL,
+            model=CHAT_MODEL,
             stream=False,
             max_tokens=-1,
-            temperature=0.7,
+            temperature=0.3,
+            response_format=ResponseFormatJSONSchema(
+                json_schema=JSONSchema(
+                    name="KeyPoint", schema=KeyPoint.model_json_schema()
+                ),
+                type="json_schema",
+            ),
         )  # type: ignore
 
         content: str = chat_completion.choices[0].message.content  # type: ignore
-        return content
+        return KeyPoint.model_validate_json(content)
 
 
 class Questioner:
     def __init__(self) -> None:
-        self.MODEL = "gemma-2-9b-it"
-        self.client = OpenAI(base_url="http://127.0.0.1:1234/v1", api_key="lm-studio")
+        self.client = OpenAI(base_url=BASE_URL, api_key="lm-studio")
 
     def transform(self, query) -> str:
         chat_completion: ChatCompletion = self.client.chat.completions.create(
@@ -167,7 +197,7 @@ class Questioner:
                     "content": f"根據此問題:{query}, 列出額外至少三項對於這個問題有幫助的問題",
                 }
             ],  # type: ignore
-            model=self.MODEL,
+            model=CHAT_MODEL,
             stream=False,
             max_tokens=-1,
             temperature=0.7,
@@ -191,7 +221,6 @@ filter_json_schema = ResponseFormatJSONSchema(
 
 class Filter:
     def __init__(self) -> None:
-        self.MODEL = "gemma-2-9b-it"
         self.client = OpenAI(base_url="http://127.0.0.1:1234/v1", api_key="lm-studio")
 
     def filter(self, query: str, text: str) -> bool:
@@ -213,7 +242,7 @@ class Filter:
             """.format(query=query, text=text),
                 }
             ],  # type: ignore
-            model=self.MODEL,
+            model=CHAT_MODEL,
             stream=False,
             max_tokens=-1,
             temperature=0.3,

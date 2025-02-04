@@ -28,7 +28,14 @@ requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [[tool.mypy.overrides]]
-module = ["transformers.*", "janus.*", "ffmpeg.*", "networkx.*", "sqlite_vec.*"]
+module = [
+    "transformers.*",
+    "janus.*",
+    "ffmpeg.*",
+    "networkx.*",
+    "sqlite_vec.*",
+    "tqdm.*",
+]
 ignore_missing_imports = true
 
 [tool.mypy]
